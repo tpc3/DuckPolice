@@ -1,8 +1,8 @@
 debug: true
-help: https://github.com/tpc3/duckpolice/wiki
+help: https://github.com/tpc3/DuckPolice/wiki
 discord:
-  token: "YOUR TOKEN HERE"
-  status: "Duck Police is observing you"
+  token: "YOUR_TOKEN_HERE"
+  status: "Duck Police is observing you | p.help"
 duplicate:
   react: "🚨"
   message: "既出警察だ！"
