@@ -83,7 +83,7 @@ func loadLang() {
 			DeletedLog: "old log",
 		},
 		Error: errorstr{
-			UnknownTitle: "Unexpected error is occured.",
+			UnknownTitle: "Unexpected error is occurred.",
 			UnknownDesc:  "This issue will be reported",
 			NoCmd:        "No such command.",
 			SubCmd:       "Invalid argument.",
