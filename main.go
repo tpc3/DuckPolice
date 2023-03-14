@@ -30,7 +30,7 @@ func main() {
 		log.Fatalf("error opening connection: %s", err.Error())
 	}
 
-	log.Printf("DuckPolice is now dispatching!")
+	log.Println("DuckPolice is now dispatching!")
 	discord.UpdateGameStatus(0, config.CurrentConfig.Discord.Status)
 
 	defer func() {
