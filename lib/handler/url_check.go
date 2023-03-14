@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"log"
 	"regexp"
 	"strings"
 
@@ -13,7 +12,6 @@ import (
 
 func urlCheck(session *discordgo.Session, orgMsg *discordgo.MessageCreate) {
 	parsed := parseMsg(orgMsg.Content)
-	log.Print(parsed)
 	for _, url := range parsed {
 		found, channelid, messageid := db.SearchLog(orgMsg, &orgMsg.GuildID, &url)
 		if found {
