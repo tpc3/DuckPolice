@@ -43,11 +43,11 @@ var CurrentConfig Config
 func init() {
 	file, err := os.ReadFile(configFile)
 	if err != nil {
-		log.Fatal("Config load failed: ", err)
+		log.Fatalf("Config load failed: %s", err)
 	}
 	err = yaml.Unmarshal(file, &CurrentConfig)
 	if err != nil {
-		log.Fatal("Config parse failed: ", err)
+		log.Fatalf("Config parse failed: %s", err)
 	}
 
 	//verify
@@ -55,10 +55,10 @@ func init() {
 		log.Println("Debug is enabled")
 	}
 	if CurrentConfig.Discord.Token == "" {
-		log.Fatalf("Token is empty")
+		log.Fatal("Token is empty")
 	}
 	if CurrentConfig.Db.Tableprefix == "" {
-		log.Fatalf("Tableprefix is empty")
+		log.Fatal("Tableprefix is empty")
 	}
 	if CurrentConfig.LogPeriod == 0 {
 		log.Println("LogPeriod is empty, setting 31536000")
