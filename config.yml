@@ -6,6 +6,8 @@ discord:
 duplicate:
   react: "🚨"
   message: "既出警察だ！"
+  delete: "❌"
+  bye: "帰ります..."
 db:
   kind: sqlite3
   parameter: ./db.sqlite

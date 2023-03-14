@@ -43,12 +43,12 @@ func UnknownError(session *discordgo.Session, orgMsg *discordgo.MessageCreate, l
 
 func HandleCmd(session *discordgo.Session, orgMsg *discordgo.MessageCreate, guild *config.Guild, message *string) {
 	splitMsg := strings.SplitN(*message, " ", 2)
+
 	var param string
 	if len(splitMsg) == 2 {
 		param = splitMsg[1]
-	} else {
-		param = ""
 	}
+
 	switch splitMsg[0] {
 	case Ping:
 		PingCmd(session, orgMsg, guild, &param)

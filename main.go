@@ -5,33 +5,42 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/bwmarrin/discordgo"
+	_ "github.com/mattn/go-sqlite3"
+
 	"github.com/tpc3/DuckPolice/lib/config"
 	"github.com/tpc3/DuckPolice/lib/db"
 	"github.com/tpc3/DuckPolice/lib/handler"
-
-	"github.com/bwmarrin/discordgo"
-	_ "github.com/mattn/go-sqlite3"
 )
 
 func main() {
-	Token := config.CurrentConfig.Discord.Token
-	discord, err := discordgo.New("Bot " + Token)
+	token := config.CurrentConfig.Discord.Token
+	discord, err := discordgo.New("Bot " + token)
+
 	if err != nil {
-		log.Fatal("error creating Discord session: ", err)
+		log.Fatal("error creating Discord session: ", err.Error())
 	}
+
 	discord.AddHandler(handler.MessageCreate)
-	discord.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuilds | discordgo.IntentsGuildMessages | discordgo.IntentsMessageContent)
+	discord.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuilds | discordgo.IntentsGuildMessages | discordgo.IntentsMessageContent | discordgo.IntentsGuildMessageReactions)
+
 	err = discord.Open()
+
 	if err != nil {
-		log.Fatal("error opening connection: ", err)
+		log.Fatal("error opening connection: ", err.Error())
 	}
-	discord.UpdateGameStatus(0, config.CurrentConfig.Discord.Status)
-	go db.AutoLogCleaner()
+
 	log.Print("DuckPolice is now dispatching!")
-	defer discord.Close()
-	defer db.Close()
+	discord.UpdateGameStatus(0, config.CurrentConfig.Discord.Status)
+
+	defer func() {
+		discord.Close()
+		db.Close()
+		log.Print("DuckPolice is gracefully shutdowning!")
+	}()
+
+	go db.AutoLogCleaner()
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
 	<-stop
-	log.Print("DuckPolice is gracefully shutdowning!")
 }
