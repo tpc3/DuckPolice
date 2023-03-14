@@ -3,6 +3,7 @@ package handler
 import (
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/tpc3/DuckPolice/lib/config"
 	"github.com/tpc3/DuckPolice/lib/db"
@@ -15,12 +16,22 @@ func urlCheck(session *discordgo.Session, orgMsg *discordgo.MessageCreate) {
 	for _, url := range parsed {
 		found, channelid, messageid := db.SearchLog(orgMsg, &orgMsg.GuildID, &url)
 		if found {
-			go func() {
-				session.MessageReactionAdd(orgMsg.ChannelID, orgMsg.ID, config.CurrentConfig.Duplicate.React)
-			}()
+			go session.MessageReactionAdd(orgMsg.ChannelID, orgMsg.ID, config.CurrentConfig.Duplicate.React)
 			replyMessage := config.CurrentConfig.Duplicate.Message + "\nhttps://discord.com/channels/" + orgMsg.GuildID + "/" + channelid + "/" + messageid
 			msg, _ := session.ChannelMessageSendReply(orgMsg.ChannelID, replyMessage, orgMsg.Reference())
-			session.MessageReactionAdd(msg.ChannelID, msg.ID, config.CurrentConfig.Duplicate.Delete)
+			go session.MessageReactionAdd(msg.ChannelID, msg.ID, config.CurrentConfig.Duplicate.Delete)
+			session.AddHandler(func(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
+				if r.MessageID == msg.ID && r.UserID != s.State.User.ID {
+					go s.MessageReactionRemove(msg.ChannelID, orgMsg.ID, config.CurrentConfig.Duplicate.React, s.State.User.ID)
+					go s.MessageReactionsRemoveAll(msg.ChannelID, msg.ID)
+					go s.ChannelMessageEdit(msg.ChannelID, msg.ID, config.CurrentConfig.Duplicate.Bye)
+					go func() {
+						<-time.After(3 * time.Second)
+						s.ChannelMessageDelete(msg.ChannelID, msg.ID)
+					}()
+				}
+			})
+
 		} else {
 			db.AddLog(orgMsg, &orgMsg.GuildID, &url, &orgMsg.ChannelID, &orgMsg.ID)
 		}

@@ -7,6 +7,7 @@ duplicate:
   react: "🚨"
   message: "既出警察だ！"
   delete: "❌"
+  bye: "はい..帰りますぅ"
 db:
   kind: sqlite3
   parameter: ./db.sqlite
