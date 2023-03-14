@@ -23,6 +23,7 @@ func main() {
 
 	discord.AddHandler(handler.MessageCreate)
 	discord.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuilds | discordgo.IntentsGuildMessages | discordgo.IntentsMessageContent | discordgo.IntentsGuildMessageReactions)
+
 	err = discord.Open()
 
 	if err != nil {

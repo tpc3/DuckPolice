@@ -26,7 +26,7 @@ type Config struct {
 		Tableprefix string
 	}
 	Guild           Guild
-	DomainBlacklist []string `yaml:"url_blacklist"`
+	DomainBlacklist []string `yaml:"domain_blacklist"`
 	UserBlacklist   []string `yaml:"user_blacklist"`
 	LogPeriod       int64    `yaml:"log_period"`
 }
