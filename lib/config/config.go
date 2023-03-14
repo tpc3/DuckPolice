@@ -17,6 +17,7 @@ type Config struct {
 	Duplicate struct {
 		React   string
 		Message string
+		Delete  string
 	}
 	Db struct {
 		Kind        string
