@@ -20,7 +20,7 @@ func urlCheck(session *discordgo.Session, orgMsg *discordgo.MessageCreate) {
 			}()
 			replyMessage := config.CurrentConfig.Duplicate.Message + "\nhttps://discord.com/channels/" + orgMsg.GuildID + "/" + channelid + "/" + messageid
 			msg, _ := session.ChannelMessageSendReply(orgMsg.ChannelID, replyMessage, orgMsg.Reference())
-			session.MessageReactionAdd(msg.ChannelID, msg.ID, "kaere:1085113264402354186")
+			session.MessageReactionAdd(msg.ChannelID, msg.ID, config.CurrentConfig.Duplicate.Delete)
 		} else {
 			db.AddLog(orgMsg, &orgMsg.GuildID, &url, &orgMsg.ChannelID, &orgMsg.ID)
 		}
