@@ -18,7 +18,7 @@ func main() {
 	discord, err := discordgo.New("Bot " + token)
 
 	if err != nil {
-		log.Fatalf("error creating Discord session: %s", err.Error())
+		log.Fatal("error creating Discord session: ", err.Error())
 	}
 
 	discord.AddHandler(handler.MessageCreate)
@@ -27,10 +27,10 @@ func main() {
 	err = discord.Open()
 
 	if err != nil {
-		log.Fatalf("error opening connection: %s", err.Error())
+		log.Fatal("error opening connection: ", err.Error())
 	}
 
-	log.Println("DuckPolice is now dispatching!")
+	log.Print("DuckPolice is now dispatching!")
 	discord.UpdateGameStatus(0, config.CurrentConfig.Discord.Status)
 
 	defer func() {

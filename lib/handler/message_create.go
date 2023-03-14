@@ -19,7 +19,7 @@ func MessageCreate(session *discordgo.Session, orgMsg *discordgo.MessageCreate) 
 	if config.CurrentConfig.Debug {
 		start := time.Now()
 		defer func() {
-			log.Println("Message processed in ", time.Since(start).Milliseconds(), "ms.")
+			log.Print("Message processed in ", time.Since(start).Milliseconds(), "ms.")
 		}()
 	}
 
