@@ -1,7 +1,9 @@
 package handler
 
 import (
+	"log"
 	"strings"
+	"time"
 
 	"github.com/tpc3/DuckPolice/lib/cmds"
 	"github.com/tpc3/DuckPolice/lib/config"
@@ -13,6 +15,13 @@ import (
 func MessageCreate(session *discordgo.Session, orgMsg *discordgo.MessageCreate) {
 	guild := db.LoadGuild(&orgMsg.GuildID)
 	prefix := guild.Prefix
+
+	if config.CurrentConfig.Debug {
+		start := time.Now()
+		defer func() {
+			log.Println("Message processed in ", time.Since(start).Milliseconds(), "ms.")
+		}()
+	}
 
 	if orgMsg.Author.ID == session.State.User.ID {
 		return
