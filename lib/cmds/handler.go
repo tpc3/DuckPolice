@@ -20,7 +20,7 @@ func ReplyEmbed(session *discordgo.Session, orgMsg *discordgo.MessageCreate, emb
 	}
 	_, err := session.ChannelMessageSendComplex(orgMsg.ChannelID, &reply)
 	if err != nil {
-		log.Print("Failed to send reply: ", err)
+		log.Println("Failed to send reply: ", err)
 	}
 }
 

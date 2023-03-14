@@ -51,16 +51,16 @@ func init() {
 
 	//verify
 	if CurrentConfig.Debug {
-		log.Print("Debug is enabled")
+		log.Println("Debug is enabled")
 	}
 	if CurrentConfig.Discord.Token == "" {
-		log.Fatal("Token is empty")
+		log.Fatalf("Token is empty")
 	}
 	if CurrentConfig.Db.Tableprefix == "" {
-		log.Fatal("Tableprefix is empty")
+		log.Fatalf("Tableprefix is empty")
 	}
 	if CurrentConfig.LogPeriod == 0 {
-		log.Print("LogPeriod is empty, setting 31536000")
+		log.Println("LogPeriod is empty, setting 31536000")
 	}
 
 	loadLang()

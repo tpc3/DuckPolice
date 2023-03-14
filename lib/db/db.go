@@ -113,7 +113,7 @@ func LoadGuild(id *string) *config.Guild {
 
 	if !foundGuild {
 		rows.Close()
-		log.Print("WARN: Guild not found, making row.")
+		log.Println("WARN: Guild not found, making row.")
 		guild := config.CurrentConfig.Guild
 		_, err = insertGuildStmt.Exec(id, db_version, guild.Prefix, guild.Lang)
 		if err != nil {
@@ -150,7 +150,7 @@ func LoadGuild(id *string) *config.Guild {
 	}
 
 	if !foundInDb {
-		log.Fatal("LoadGuild next returned false")
+		log.Fatalf("LoadGuild next returned false")
 	}
 
 	addLogStmt[*id], err = db.Prepare("INSERT INTO " + URLsTable + "(content,timeat,channelid,messageid) VALUES(?,?,?,?)")
@@ -171,7 +171,7 @@ func LoadGuild(id *string) *config.Guild {
 func SaveGuild(id *string, guild *config.Guild) error {
 	_, err := updateGuildStmt.Exec(db_version, guild.Prefix, guild.Lang, *id)
 	if err != nil {
-		log.Print("ERROR: SaveGuild error: ", err)
+		log.Println("ERROR: SaveGuild error: ", err)
 		return err
 	}
 	return nil
@@ -212,7 +212,7 @@ func AutoLogCleaner() {
 		guildCache.Range(func(guildID, value interface{}) bool {
 			_, err := CleanOldLog(guildID.(*string))
 			if err != nil {
-				log.Print("Failed to auto clean log: ", err)
+				log.Println("Failed to auto clean log: ", err)
 			}
 			return true
 		})
