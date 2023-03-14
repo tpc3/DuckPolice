@@ -39,11 +39,10 @@ func urlCheck(session *discordgo.Session, orgMsg *discordgo.MessageCreate) {
 }
 
 var (
-	urlWithPathRegex = `((http|https):\/\/)?[\w\-]+(\.[\w\-]+)+[/\w\-\.\?\,\'\/\\\+&amp;%\$#\=~]*`
+	re = regexp.MustCompile(`https?://[\w+.:?#[\]@!$&'()~*,;=/%-]+`)
 )
 
 func parseMsg(origin string) []string {
-	re := regexp.MustCompile(urlWithPathRegex)
 	results := re.FindAllString(origin, -1)
 
 	for i, result := range results {
