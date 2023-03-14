@@ -14,8 +14,8 @@ guild:
   prefix: p.
   lang: japanese
 domain_blacklist:
-  - "https://google.com"
-  - "https://letmegooglethat.com"
+  - "google.com"
+  - "letmegooglethat.com"
 user_blacklist:
   - "0000000000000000000" # Add here to ignore user at all
 log_period: 2592000 # 30 days
