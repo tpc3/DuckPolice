@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"log"
 	"regexp"
 	"strings"
 
@@ -13,7 +12,6 @@ import (
 
 func urlCheck(session *discordgo.Session, orgMsg *discordgo.MessageCreate) {
 	parsed := parseMsg(orgMsg.Content)
-	log.Print(parsed)
 	for _, url := range parsed {
 		found, channelid, messageid := db.SearchLog(orgMsg, &orgMsg.GuildID, &url)
 		if found {
@@ -53,7 +51,6 @@ func parseMsg(origin string) []string {
 		}
 
 		results[i] = strings.ReplaceAll(results[i], "youtu.be/", "youtube.com/watch?v=")
-		results[i] = strings.ReplaceAll(results[i], "m.", "")
 		results[i] = strings.ReplaceAll(results[i], "m.", "")
 		results[i] = strings.ReplaceAll(results[i], "mobile.", "")
 	}
