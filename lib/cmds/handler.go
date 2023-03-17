@@ -54,6 +54,8 @@ func HandleCmd(session *discordgo.Session, orgMsg *discordgo.MessageCreate, guil
 		PingCmd(session, orgMsg, guild, &param)
 	case Help:
 		HelpCmd(session, orgMsg, guild, &param)
+	case Config:
+		ConfigCmd(session, orgMsg, guild, &param)
 	case Clean:
 		CleanCmd(session, orgMsg, guild, &param)
 	default:
