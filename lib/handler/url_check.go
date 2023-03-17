@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log"
 	"regexp"
 	"strings"
 
@@ -11,14 +12,31 @@ import (
 )
 
 func urlCheck(session *discordgo.Session, orgMsg *discordgo.MessageCreate) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Println("Recovered from panic:", r)
+		}
+	}()
 	parsed := parseMsg(orgMsg.Content)
 	for _, url := range parsed {
 		found, channelid, messageid := db.SearchLog(orgMsg, &orgMsg.GuildID, &url)
 		if found {
-			go session.MessageReactionAdd(orgMsg.ChannelID, orgMsg.ID, config.CurrentConfig.Duplicate.React)
+			if err := session.MessageReactionAdd(orgMsg.ChannelID, orgMsg.ID, config.CurrentConfig.Duplicate.React); err != nil {
+				log.Print("Failed to add reaction: ", err)
+				return
+			}
+
 			replyMessage := config.CurrentConfig.Duplicate.Message + "\nhttps://discord.com/channels/" + orgMsg.GuildID + "/" + channelid + "/" + messageid
-			msg, _ := session.ChannelMessageSendReply(orgMsg.ChannelID, replyMessage, orgMsg.Reference())
-			go session.MessageReactionAdd(msg.ChannelID, msg.ID, config.CurrentConfig.Duplicate.Delete)
+			msg, err := session.ChannelMessageSendReply(orgMsg.ChannelID, replyMessage, orgMsg.Reference())
+			if err != nil {
+				log.Print("Failed to send message: ", err)
+				return
+			}
+
+			if err := session.MessageReactionAdd(msg.ChannelID, msg.ID, config.CurrentConfig.Duplicate.Delete); err != nil {
+				log.Print("Failed to add reaction: ", err)
+				return
+			}
 		} else {
 			db.AddLog(orgMsg, &orgMsg.GuildID, &url, &orgMsg.ChannelID, &orgMsg.ID)
 		}
@@ -29,31 +47,29 @@ var (
 	re = regexp.MustCompile(`https?://[\w+.:?#[\]@!$&'()~*,;=/%-]+`)
 )
 
-func parseMsg(origin string) []string {
-	if strings.HasPrefix(origin, "<") {
+func parseMsg(msg string) []string {
+	if strings.HasPrefix(msg, "<") {
 		return []string{}
 	}
 
-	results := re.FindAllString(origin, -1)
-
-	for i, result := range results {
+	var results []string
+	for _, url := range re.FindAllString(msg, -1) {
+		blacklistMatched := false
 		for _, domain := range config.CurrentConfig.DomainBlacklist {
-			if strings.Contains(result, domain) {
-				results = append(results[:i], results[i+1:]...)
-				continue
+			if strings.Contains(url, domain) {
+				blacklistMatched = true
+				break
 			}
 		}
-
-		results[i] = strings.ReplaceAll(result, "www.", "")
-
-		if strings.HasSuffix(result, "/") {
-			results[i] = result[:len(result)-1]
+		if !blacklistMatched {
+			var result string
+			result = strings.ReplaceAll(url, "www.", "")
+			result = strings.TrimSuffix(result, "/")
+			result = strings.ReplaceAll(result, "youtu.be/", "youtube.com/watch?v=")
+			result = strings.ReplaceAll(result, "m.", "")
+			result = strings.ReplaceAll(result, "mobile.", "")
+			results = append(results, result)
 		}
-
-		results[i] = strings.ReplaceAll(results[i], "youtu.be/", "youtube.com/watch?v=")
-		results[i] = strings.ReplaceAll(results[i], "m.", "")
-		results[i] = strings.ReplaceAll(results[i], "mobile.", "")
 	}
-
 	return results
 }
