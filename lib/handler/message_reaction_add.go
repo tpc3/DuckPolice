@@ -16,7 +16,6 @@ func MessageReactionAdd(session *discordgo.Session, reaction *discordgo.MessageR
 		return
 	}
 
-	//メッセージについているリアクションを習得する
 	reactions, _ := session.MessageReactions(reaction.ChannelID, reaction.MessageID, config.CurrentConfig.Duplicate.Delete, 100, "", "")
 
 	reacted := false
