@@ -15,8 +15,10 @@ type Config struct {
 		Status string
 	}
 	Duplicate struct {
-		React   string
-		Message string
+		DeleteMessage bool
+		Alert         string
+		Message       string
+		React         string
 	}
 	Db struct {
 		Kind        string

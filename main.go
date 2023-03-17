@@ -20,7 +20,7 @@ func main() {
 		log.Fatal("error creating Discord session: ", err)
 	}
 	discord.AddHandler(handler.MessageCreate)
-	discord.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuilds | discordgo.IntentsGuildMessages | discordgo.IntentsMessageContent)
+	discord.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuilds | discordgo.IntentsGuildMessages | discordgo.IntentsMessageContent | discordgo.IntentsDirectMessages)
 	err = discord.Open()
 	if err != nil {
 		log.Fatal("error opening connection: ", err)

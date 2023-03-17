@@ -4,8 +4,10 @@ discord:
   token: "YOUR_TOKEN_HERE"
   status: "Duck Police is observing you | p.help"
 duplicate:
-  react: "🚨"
+  deletemessage: false
+  alert: "reply"
   message: "既出警察だ！"
+  react: "🚨"
 db:
   kind: sqlite3
   parameter: ./db.sqlite
@@ -16,6 +18,7 @@ guild:
 domain_blacklist:
   - "google.com"
   - "letmegooglethat.com"
+  - "discord.com"
 user_blacklist:
   - "0000000000000000000" # Add here to ignore user at all
 log_period: 2592000 # 30 days

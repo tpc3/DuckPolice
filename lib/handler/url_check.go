@@ -16,9 +16,31 @@ func urlCheck(session *discordgo.Session, orgMsg *discordgo.MessageCreate) {
 	parsed := parseMsg(orgMsg.Content)
 	for _, url := range parsed {
 		found, channelid, messageid := db.SearchLog(orgMsg, &orgMsg.GuildID, &url)
+		message := config.CurrentConfig.Duplicate.Message + "\nhttps://discord.com/channels/" + orgMsg.GuildID + "/" + channelid + "/" + messageid
 		if found {
-			session.MessageReactionAdd(orgMsg.ChannelID, orgMsg.ID, config.CurrentConfig.Duplicate.React)
-			session.ChannelMessageSendReply(orgMsg.ChannelID, config.CurrentConfig.Duplicate.Message+"\nhttps://discord.com/channels/"+orgMsg.GuildID+"/"+channelid+"/"+messageid, orgMsg.Reference())
+			if config.CurrentConfig.Duplicate.DeleteMessage {
+				session.ChannelMessageDelete(orgMsg.ChannelID, orgMsg.ID)
+			}
+			switch config.CurrentConfig.Duplicate.Alert {
+			case "directmessage":
+				dm, err := session.UserChannelCreate(orgMsg.Author.ID)
+				if err != nil {
+					log.Print("Create direct message channel error: ", err)
+				}
+				session.ChannelMessageSend(dm.ID, message)
+			case "message":
+				if !config.CurrentConfig.Duplicate.DeleteMessage {
+					session.MessageReactionAdd(orgMsg.ChannelID, orgMsg.ID, config.CurrentConfig.Duplicate.React)
+				}
+				session.ChannelMessageSend(orgMsg.ChannelID, message)
+			case "reply":
+				if !config.CurrentConfig.Duplicate.DeleteMessage {
+					session.MessageReactionAdd(orgMsg.ChannelID, orgMsg.ID, config.CurrentConfig.Duplicate.React)
+					session.ChannelMessageSendReply(orgMsg.ChannelID, message, orgMsg.Reference())
+				} else {
+					session.ChannelMessageSend(orgMsg.ChannelID, message)
+				}
+			}
 		} else {
 			db.AddLog(orgMsg, &orgMsg.GuildID, &url, &orgMsg.ChannelID, &orgMsg.ID)
 		}
