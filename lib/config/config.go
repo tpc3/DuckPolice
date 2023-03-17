@@ -18,7 +18,6 @@ type Config struct {
 		React   string
 		Message string
 		Delete  string
-		Bye     string
 	}
 	Db struct {
 		Kind        string

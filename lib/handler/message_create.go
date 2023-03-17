@@ -23,11 +23,9 @@ func MessageCreate(session *discordgo.Session, orgMsg *discordgo.MessageCreate) 
 		}()
 	}
 
-	if orgMsg.Author.ID == session.State.User.ID {
-		return
-	}
-
-	if orgMsg.Author.Bot {
+	// Ignore all messages created by the bot itself
+	// This isn't required in this specific example but it's a good practice.
+	if orgMsg.Author.ID == session.State.User.ID || orgMsg.Content == "" {
 		return
 	}
 
@@ -36,6 +34,13 @@ func MessageCreate(session *discordgo.Session, orgMsg *discordgo.MessageCreate) 
 			return
 		}
 	}
+
+	// Ignore bot message
+	if orgMsg.Author.Bot {
+		return
+	}
+
+	guild := db.LoadGuild(&orgMsg.GuildID)
 
 	isCmd := false
 	var trimedMsg string

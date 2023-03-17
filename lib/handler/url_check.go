@@ -20,22 +20,30 @@ func urlCheck(session *discordgo.Session, orgMsg *discordgo.MessageCreate) {
 	parsed := parseMsg(orgMsg.Content)
 	for _, url := range parsed {
 		found, channelid, messageid := db.SearchLog(orgMsg, &orgMsg.GuildID, &url)
+		message := config.CurrentConfig.Duplicate.Message + "\nhttps://discord.com/channels/" + orgMsg.GuildID + "/" + channelid + "/" + messageid
 		if found {
-			if err := session.MessageReactionAdd(orgMsg.ChannelID, orgMsg.ID, config.CurrentConfig.Duplicate.React); err != nil {
-				log.Print("Failed to add reaction: ", err)
-				return
+			if config.CurrentConfig.Duplicate.DeleteMessage {
+				session.ChannelMessageDelete(orgMsg.ChannelID, orgMsg.ID)
 			}
-
-			replyMessage := config.CurrentConfig.Duplicate.Message + "\nhttps://discord.com/channels/" + orgMsg.GuildID + "/" + channelid + "/" + messageid
-			msg, err := session.ChannelMessageSendReply(orgMsg.ChannelID, replyMessage, orgMsg.Reference())
-			if err != nil {
-				log.Print("Failed to send message: ", err)
-				return
-			}
-
-			if err := session.MessageReactionAdd(msg.ChannelID, msg.ID, config.CurrentConfig.Duplicate.Delete); err != nil {
-				log.Print("Failed to add reaction: ", err)
-				return
+			switch config.CurrentConfig.Duplicate.Alert {
+			case "directmessage":
+				dm, err := session.UserChannelCreate(orgMsg.Author.ID)
+				if err != nil {
+					log.Print("Create direct message channel error: ", err)
+				}
+				session.ChannelMessageSend(dm.ID, message)
+			case "message":
+				if !config.CurrentConfig.Duplicate.DeleteMessage {
+					session.MessageReactionAdd(orgMsg.ChannelID, orgMsg.ID, config.CurrentConfig.Duplicate.React)
+				}
+				session.ChannelMessageSend(orgMsg.ChannelID, message)
+			case "reply":
+				if !config.CurrentConfig.Duplicate.DeleteMessage {
+					session.MessageReactionAdd(orgMsg.ChannelID, orgMsg.ID, config.CurrentConfig.Duplicate.React)
+					session.ChannelMessageSendReply(orgMsg.ChannelID, message, orgMsg.Reference())
+				} else {
+					session.ChannelMessageSend(orgMsg.ChannelID, message)
+				}
 			}
 		} else {
 			db.AddLog(orgMsg, &orgMsg.GuildID, &url, &orgMsg.ChannelID, &orgMsg.ID)
