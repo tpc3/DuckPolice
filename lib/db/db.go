@@ -18,6 +18,7 @@ var insertGuildStmt *sql.Stmt
 var updateGuildStmt *sql.Stmt
 
 var addLogStmt map[string]*sql.Stmt
+var updateLogStmt map[string]*sql.Stmt
 var cleanOldLogStmt map[string]*sql.Stmt
 
 var guild_loaded bool
@@ -65,6 +66,7 @@ func init() {
 		log.Fatal("Prepare updateGuildStmt error", err)
 	}
 	addLogStmt = map[string]*sql.Stmt{}
+	updateLogStmt = map[string]*sql.Stmt{}
 	cleanOldLogStmt = map[string]*sql.Stmt{}
 }
 
@@ -132,6 +134,11 @@ func LoadGuild(id *string) *config.Guild {
 		log.Fatal("Prepare addLogStmt error: ", err)
 	}
 
+	updateLogStmt[*id], err = db.Prepare("UPDATE  " + URLsTable + " SET channelid = ?, messageid = ? WHERE content = ?")
+	if err != nil {
+		log.Fatal("Prepare updateLogStmt error: ", err)
+	}
+
 	cleanOldLogStmt[*id], err = db.Prepare("DELETE FROM " + URLsTable + " " + "WHERE timeat < ?")
 	if err != nil {
 		log.Fatal("Prepare cleanOldLogStmt error: ", err)
@@ -156,12 +163,16 @@ func AddLog(orgMsg *discordgo.MessageCreate, guildId *string, content *string, c
 	addLogStmt[*guildId].Exec(content, time.Now().Unix(), channelid, messageid)
 }
 
-func SearchLog(orgMsg *discordgo.MessageCreate, guildId *string, content *string) (found bool, channelid string, messageid string) {
-	if !(guild_loaded) {
+func UpdateLog(orgMsg *discordgo.MessageCreate, guildId *string, content *string, channelid, messageid *string) {
+	updateLogStmt[*guildId].Exec(channelid, messageid, content)
+}
+
+func SearchLog(session *discordgo.Session, orgMsg *discordgo.MessageCreate, guildId *string, content *string) (found bool, channelid string, messageid string) {
+	if !guild_loaded {
 		LoadGuild(guildId)
 	}
 	URLsTable := config.CurrentConfig.Db.Tableprefix + *guildId + "_URLs"
-	err := db.QueryRow("SELECT channelid, messageid FROM "+URLsTable+" "+"WHERE content = ?", content).Scan(&channelid, &messageid)
+	err := db.QueryRow("SELECT channelid, messageid FROM "+URLsTable+" WHERE content = ?", content).Scan(&channelid, &messageid)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			found = false
@@ -169,6 +180,11 @@ func SearchLog(orgMsg *discordgo.MessageCreate, guildId *string, content *string
 			log.Fatal("Search Log error: ", err)
 		}
 	} else {
+		exist, _ := session.ChannelMessage(channelid, messageid)
+		if exist == nil {
+			UpdateLog(orgMsg, guildId, content, &orgMsg.ChannelID, &orgMsg.ID)
+			return
+		}
 		found = true
 	}
 	return

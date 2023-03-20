@@ -15,7 +15,7 @@ import (
 func urlCheck(session *discordgo.Session, orgMsg *discordgo.MessageCreate) {
 	parsed := parseMsg(orgMsg.Content)
 	for _, url := range parsed {
-		found, channelid, messageid := db.SearchLog(orgMsg, &orgMsg.GuildID, &url)
+		found, channelid, messageid := db.SearchLog(session, orgMsg, &orgMsg.GuildID, &url)
 		message := config.CurrentConfig.Duplicate.Message + "\nhttps://discord.com/channels/" + orgMsg.GuildID + "/" + channelid + "/" + messageid
 		if found {
 			if config.CurrentConfig.Duplicate.DeleteMessage {
