@@ -42,6 +42,12 @@ func MessageCreate(session *discordgo.Session, orgMsg *discordgo.MessageCreate) 
 		}
 	}
 
+	for _, v := range config.CurrentConfig.ChannelBlacklist {
+		if orgMsg.ChannelID == v {
+			return
+		}
+	}
+
 	// Ignore bot message
 	if orgMsg.Author.Bot {
 		return

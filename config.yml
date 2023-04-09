@@ -21,4 +21,6 @@ domain_blacklist:
   - "discord.com"
 user_blacklist:
   - "0000000000000000000" # Add here to ignore user at all
+channel_blacklist:
+  - "000000000000000000" # Add here to ignore channel at all
 log_period: 2592000 # 30 days

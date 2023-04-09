@@ -28,6 +28,7 @@ type Config struct {
 	Guild           Guild
 	DomainBlacklist []string `yaml:"domain_blacklist"`
 	UserBlacklist   []string `yaml:"user_blacklist"`
+	ChannelBlacklist []string `yaml:"channel_blacklist"`
 	LogPeriod       int64    `yaml:"log_period"`
 }
 
