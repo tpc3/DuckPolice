@@ -64,8 +64,14 @@ url_loop:
 		if err != nil {
 			log.Panic("Invalid URL: ", rawUrl)
 		}
-		for _, v := range config.CurrentConfig.DomainBlacklist {
-			if strings.Contains(Url.Host, v) {
+		list := config.ListMap
+		switch config.CurrentConfig.Domain.Type {
+		case "black":
+			if list[Url.Host] {
+				continue url_loop
+			}
+		case "white":
+			if !list[Url.Host] {
 				continue url_loop
 			}
 		}

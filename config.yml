@@ -15,10 +15,11 @@ db:
 guild:
   prefix: p.
   lang: japanese
-domain_blacklist:
-  - "google.com"
-  - "letmegooglethat.com"
-  - "discord.com"
+domain:
+  type: white
+  list:
+    - "twitter.com"
+    - "youtube.com"
 user_blacklist:
   - "0000000000000000000" # Add here to ignore user at all
 channel_blacklist:

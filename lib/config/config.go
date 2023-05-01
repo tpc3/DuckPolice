@@ -25,17 +25,22 @@ type Config struct {
 		Parameter   string
 		Tableprefix string
 	}
-	Guild           Guild
-	DomainBlacklist []string `yaml:"domain_blacklist"`
-	UserBlacklist   []string `yaml:"user_blacklist"`
+	Guild  Guild
+	Domain struct {
+		Type     string
+		YamlList []string `yaml:"list"`
+	}
+	UserBlacklist    []string `yaml:"user_blacklist"`
 	ChannelBlacklist []string `yaml:"channel_blacklist"`
-	LogPeriod       int64    `yaml:"log_period"`
+	LogPeriod        int64    `yaml:"log_period"`
 }
 
 type Guild struct {
 	Prefix string
 	Lang   string
 }
+
+var ListMap map[string]bool
 
 const configFile = "./config.yml"
 
@@ -61,8 +66,17 @@ func init() {
 	if CurrentConfig.Db.Tableprefix == "" {
 		log.Fatal("Tableprefix is empty")
 	}
+	if CurrentConfig.Domain.Type != "white" && CurrentConfig.Domain.Type != "black" {
+		log.Fatal("Domain type is invalid")
+	}
 	if CurrentConfig.LogPeriod == 0 {
-		log.Print("LogPeriod is empty, setting 31536000")
+		CurrentConfig.LogPeriod = 2592000
+		log.Print("LogPeriod is empty, setting to 2592000")
+	}
+
+	ListMap = make(map[string]bool)
+	for _, item := range CurrentConfig.Domain.YamlList {
+		ListMap[item] = true
 	}
 
 	loadLang()
