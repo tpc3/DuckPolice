@@ -63,7 +63,7 @@ func init() {
 	}
 	updateGuildStmt, err = db.Prepare("UPDATE " + config.CurrentConfig.Db.Tableprefix + "guilds " + "SET db_version = ?, prefix = ?, lang = ? " + "WHERE id = ?")
 	if err != nil {
-		log.Fatal("Prepare updateGuildStmt error", err)
+		log.Fatal("Prepare updateGuildStmt error: ", err)
 	}
 	addLogStmt = map[string]*sql.Stmt{}
 	updateLogStmt = map[string]*sql.Stmt{}

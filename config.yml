@@ -1,13 +1,15 @@
 debug: true
 help: https://github.com/tpc3/DuckPolice/wiki
 discord:
-  token: "YOUR_TOKEN_HERE"
-  status: "Duck Police is observing you | p.help"
+  token: YOUR_TOKEN_HERE
+  status: Duck Police is observing you | p.help
 duplicate:
   deletemessage: false
-  alert: "reply"
-  message: "既出警察だ！"
-  react: "🚨"
+  alert: reply
+  message: 既出警察だ！
+  react: "\U0001F6A8"
+delete:
+  trigger: "❌"
 db:
   kind: sqlite3
   parameter: ./db.sqlite
@@ -18,10 +20,10 @@ guild:
 domain:
   type: white
   list:
-    - "twitter.com"
-    - "youtube.com"
+  - twitter.com
+  - youtube.com
 user_blacklist:
-  - "0000000000000000000" # Add here to ignore user at all
+- "0000000000000000000"
 channel_blacklist:
-  - "000000000000000000" # Add here to ignore channel at all
-log_period: 2592000 # 30 days
+- "000000000000000000"
+log_period: 2592000

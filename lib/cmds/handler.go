@@ -11,6 +11,15 @@ import (
 	"github.com/tpc3/DuckPolice/lib/embed"
 )
 
+func SendEmbed(session *discordgo.Session, orgMsg *discordgo.MessageCreate, embed *discordgo.MessageEmbed) {
+	send := discordgo.MessageSend{}
+	send.Embed = embed
+	_, err := session.ChannelMessageSendComplex(orgMsg.ChannelID, &send)
+	if err != nil {
+		log.Print("Failed to send embed: ", err)
+	}
+}
+
 func ReplyEmbed(session *discordgo.Session, orgMsg *discordgo.MessageCreate, embed *discordgo.MessageEmbed) {
 	reply := discordgo.MessageSend{}
 	reply.Embed = embed
@@ -58,6 +67,8 @@ func HandleCmd(session *discordgo.Session, orgMsg *discordgo.MessageCreate, guil
 		ConfigCmd(session, orgMsg, guild, &param)
 	case Clean:
 		CleanCmd(session, orgMsg, guild, &param)
+	case Domain:
+		DomainCmd(session, orgMsg, guild, &param)
 	default:
 		ErrorReply(session, orgMsg, config.Lang[guild.Lang].Error.NoCmd)
 	}

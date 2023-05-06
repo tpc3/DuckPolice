@@ -53,7 +53,26 @@ func MessageCreate(session *discordgo.Session, orgMsg *discordgo.MessageCreate) 
 		return
 	}
 
+	if strings.Contains(orgMsg.Content, "再掲") {
+		return
+	}
+
 	guild := db.LoadGuild(&orgMsg.GuildID)
+
+	/*
+		channel, err := session.Channel(orgMsg.ChannelID)
+		if err != nil {
+			log.Fatal("Failed to get channel info: ", err)
+		}
+		switch channel.Type {
+		case discordgo.ChannelTypeGuildPrivateThread:
+			return
+		case discordgo.ChannelTypeGuildPublicThread:
+			return
+		case discordgo.ChannelTypeGuildForum:
+			return
+		}
+	*/
 
 	isCmd := false
 	var trimedMsg string

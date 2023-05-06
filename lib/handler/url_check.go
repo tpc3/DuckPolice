@@ -59,10 +59,29 @@ func parseMsg(origin string) []string {
 url_loop:
 	for _, rawUrl := range urlWithPathRegex.FindAllString(origin, -1) {
 		rawUrl = strings.ToLower(rawUrl)
+		rawUrl = strings.ReplaceAll(rawUrl, "fxtwitter.com/", "twitter.com/")
 		rawUrl = strings.ReplaceAll(rawUrl, "youtu.be/", "youtube.com/watch?v=")
 		Url, err := url.Parse(rawUrl)
 		if err != nil {
 			log.Panic("Invalid URL: ", rawUrl)
+		}
+		switch Url.Path {
+		case "":
+			continue url_loop
+		case "/":
+			continue url_loop
+		}
+		switch Url.Host {
+		case "127.0.0.1":
+			continue url_loop
+		case "localhost":
+			continue url_loop
+		case "discord.com":
+			continue url_loop
+		case "google.com":
+			continue url_loop
+		case "letmegooglethat.com":
+			continue url_loop
 		}
 		list := config.ListMap
 		switch config.CurrentConfig.Domain.Type {
