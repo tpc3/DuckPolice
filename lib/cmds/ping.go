@@ -1,6 +1,7 @@
 package cmds
 
 import (
+	"github.com/tpc3/DuckPolice/lib/common"
 	"github.com/tpc3/DuckPolice/lib/config"
 	"github.com/tpc3/DuckPolice/lib/embed"
 
@@ -9,8 +10,8 @@ import (
 
 const Ping = "ping"
 
-func PingCmd(session *discordgo.Session, orgMsg *discordgo.MessageCreate, guild *config.Guild, message *string) {
+func PingCmd(session *discordgo.Session, orgMsg *discordgo.MessageCreate, guild *config.Guild, message string) {
 	embedMsg := embed.NewEmbed(session, orgMsg)
 	embedMsg.Title = "Pong!"
-	ReplyEmbed(session, orgMsg, embedMsg)
+	common.ReplyEmbed(session, orgMsg, embedMsg)
 }

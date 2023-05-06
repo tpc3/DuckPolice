@@ -2,10 +2,12 @@ package handler
 
 import (
 	"log"
+	"net"
 	"net/url"
 	"regexp"
 	"strings"
 
+	"github.com/tpc3/DuckPolice/lib/common"
 	"github.com/tpc3/DuckPolice/lib/config"
 	"github.com/tpc3/DuckPolice/lib/db"
 
@@ -13,36 +15,39 @@ import (
 )
 
 func urlCheck(session *discordgo.Session, orgMsg *discordgo.MessageCreate) {
-	parsed := parseMsg(orgMsg.Content)
+	guild := db.LoadGuild(orgMsg.GuildID)
+
+	groupId := common.GetGroup(session, guild, orgMsg.ChannelID)
+
+	parsed := parseMsg(guild, orgMsg.Content)
 	for _, url := range parsed {
-		found, channelid, messageid := db.SearchLog(session, orgMsg, &orgMsg.GuildID, &url)
-		message := config.CurrentConfig.Duplicate.Message + "\nhttps://discord.com/channels/" + orgMsg.GuildID + "/" + channelid + "/" + messageid
+		found, channelid, messageid := db.SearchLog(session, orgMsg.GuildID, groupId, &url)
 		if found {
-			if config.CurrentConfig.Duplicate.DeleteMessage {
-				session.ChannelMessageDelete(orgMsg.ChannelID, orgMsg.ID)
-			}
-			switch config.CurrentConfig.Duplicate.Alert {
-			case "directmessage":
+			message := guild.Alert.Message + "\nhttps://discord.com/channels/" + orgMsg.GuildID + "/" + channelid + "/" + messageid
+
+			switch guild.Alert.Type {
+			case "dm":
 				dm, err := session.UserChannelCreate(orgMsg.Author.ID)
 				if err != nil {
 					log.Print("Create direct message channel error: ", err)
+				} else {
+					session.ChannelMessageSend(dm.ID, message)
 				}
-				session.ChannelMessageSend(dm.ID, message)
 			case "message":
-				if !config.CurrentConfig.Duplicate.DeleteMessage {
-					session.MessageReactionAdd(orgMsg.ChannelID, orgMsg.ID, config.CurrentConfig.Duplicate.React)
+				err := session.MessageReactionAdd(orgMsg.ChannelID, orgMsg.ID, guild.Alert.React)
+				if err != nil {
+					common.UnknownError(session, orgMsg, guild.Lang, err)
 				}
 				session.ChannelMessageSend(orgMsg.ChannelID, message)
 			case "reply":
-				if !config.CurrentConfig.Duplicate.DeleteMessage {
-					session.MessageReactionAdd(orgMsg.ChannelID, orgMsg.ID, config.CurrentConfig.Duplicate.React)
-					session.ChannelMessageSendReply(orgMsg.ChannelID, message, orgMsg.Reference())
-				} else {
-					session.ChannelMessageSend(orgMsg.ChannelID, message)
+				err := session.MessageReactionAdd(orgMsg.ChannelID, orgMsg.ID, guild.Alert.React)
+				if err != nil {
+					common.UnknownError(session, orgMsg, guild.Lang, err)
 				}
+				session.ChannelMessageSendReply(orgMsg.ChannelID, message, orgMsg.Reference())
 			}
 		} else {
-			db.AddLog(orgMsg, &orgMsg.GuildID, &url, &orgMsg.ChannelID, &orgMsg.ID)
+			db.AddLog(orgMsg, orgMsg.GuildID, groupId, &url, orgMsg.ChannelID, orgMsg.ID)
 		}
 	}
 }
@@ -51,12 +56,11 @@ var (
 	urlWithPathRegex = regexp.MustCompile(`https?://[\w+.:?#[\]@!$&'()~*,;=/%-]+`)
 )
 
-func parseMsg(origin string) []string {
+func parseMsg(guild *config.Guild, origin string) []string {
 	result := []string{}
 	if strings.HasPrefix(origin, "< ") {
 		return result
 	}
-url_loop:
 	for _, rawUrl := range urlWithPathRegex.FindAllString(origin, -1) {
 		rawUrl = strings.ToLower(rawUrl)
 		rawUrl = strings.ReplaceAll(rawUrl, "fxtwitter.com/", "twitter.com/")
@@ -67,31 +71,28 @@ url_loop:
 		}
 		switch Url.Path {
 		case "":
-			continue url_loop
+			continue
 		case "/":
-			continue url_loop
+			continue
 		}
-		switch Url.Host {
-		case "127.0.0.1":
-			continue url_loop
-		case "localhost":
-			continue url_loop
-		case "discord.com":
-			continue url_loop
-		case "google.com":
-			continue url_loop
-		case "letmegooglethat.com":
-			continue url_loop
+		if net.ParseIP(Url.Host) != nil {
+			continue
 		}
-		list := config.ListMap
-		switch config.CurrentConfig.Domain.Type {
+		found := false
+		for _, v := range guild.Domain.List {
+			if Url.Host == v {
+				found = true
+				break
+			}
+		}
+		switch guild.Domain.Mode {
 		case "black":
-			if list[Url.Host] {
-				continue url_loop
+			if found {
+				continue
 			}
 		case "white":
-			if !list[Url.Host] {
-				continue url_loop
+			if !found {
+				continue
 			}
 		}
 		Url.Host = strings.TrimPrefix(Url.Host, "www.")
