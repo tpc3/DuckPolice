@@ -20,35 +20,42 @@ func urlCheck(session *discordgo.Session, orgMsg *discordgo.MessageCreate) {
 	groupId := common.GetGroup(session, guild, orgMsg.ChannelID)
 
 	parsed := parseMsg(guild, orgMsg.Content)
+
+	message := guild.Alert.Message
+
 	for _, url := range parsed {
 		found, channelid, messageid := db.SearchLog(session, orgMsg.GuildID, groupId, &url)
 		if found {
-			message := guild.Alert.Message + "\nhttps://discord.com/channels/" + orgMsg.GuildID + "/" + channelid + "/" + messageid
-
-			switch guild.Alert.Type {
-			case "dm":
-				dm, err := session.UserChannelCreate(orgMsg.Author.ID)
-				if err != nil {
-					log.Print("Create direct message channel error: ", err)
-				} else {
-					session.ChannelMessageSend(dm.ID, message)
-				}
-			case "message":
-				err := session.MessageReactionAdd(orgMsg.ChannelID, orgMsg.ID, guild.Alert.React)
-				if err != nil {
-					common.UnknownError(session, orgMsg, guild.Lang, err)
-				}
-				session.ChannelMessageSend(orgMsg.ChannelID, message)
-			case "reply":
-				err := session.MessageReactionAdd(orgMsg.ChannelID, orgMsg.ID, guild.Alert.React)
-				if err != nil {
-					common.UnknownError(session, orgMsg, guild.Lang, err)
-				}
-				session.ChannelMessageSendReply(orgMsg.ChannelID, message, orgMsg.Reference())
-			}
+			message += "\nhttps://discord.com/channels/" + orgMsg.GuildID + "/" + channelid + "/" + messageid
 		} else {
 			db.AddLog(orgMsg, orgMsg.GuildID, groupId, &url, orgMsg.ChannelID, orgMsg.ID)
 		}
+	}
+
+	if message == guild.Alert.Message {
+		return
+	}
+
+	switch guild.Alert.Type {
+	case "dm":
+		dm, err := session.UserChannelCreate(orgMsg.Author.ID)
+		if err != nil {
+			log.Print("Create direct message channel error: ", err)
+		} else {
+			session.ChannelMessageSend(dm.ID, message)
+		}
+	case "message":
+		err := session.MessageReactionAdd(orgMsg.ChannelID, orgMsg.ID, guild.Alert.React)
+		if err != nil {
+			common.UnknownError(session, orgMsg, guild.Lang, err)
+		}
+		session.ChannelMessageSend(orgMsg.ChannelID, message)
+	case "reply":
+		err := session.MessageReactionAdd(orgMsg.ChannelID, orgMsg.ID, guild.Alert.React)
+		if err != nil {
+			common.UnknownError(session, orgMsg, guild.Lang, err)
+		}
+		session.ChannelMessageSendReply(orgMsg.ChannelID, message, orgMsg.Reference())
 	}
 }
 
@@ -57,9 +64,11 @@ var (
 )
 
 func parseMsg(guild *config.Guild, origin string) []string {
-	result := []string{}
-	if strings.HasPrefix(origin, "< ") {
-		return result
+	result := make(map[string]struct{})
+	for _, v := range guild.ParsedIgnore {
+		if v.MatchString(origin) {
+			return []string{}
+		}
 	}
 	for _, rawUrl := range urlWithPathRegex.FindAllString(origin, -1) {
 		rawUrl = strings.ToLower(rawUrl)
@@ -102,7 +111,13 @@ func parseMsg(guild *config.Guild, origin string) []string {
 			Url.Host = strings.TrimPrefix(Url.Host, "mobile.")
 			Url.RawQuery = ""
 		}
-		result = append(result, Url.String())
+		result[Url.String()] = struct{}{}
 	}
-	return result
+
+	keys := make([]string, 0, len(result))
+	for k := range result {
+		keys = append(keys, k)
+	}
+
+	return keys
 }

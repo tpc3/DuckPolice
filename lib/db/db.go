@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"log"
+	"regexp"
 	"time"
 
 	"github.com/tpc3/DuckPolice/lib/config"
@@ -95,20 +96,34 @@ func LoadGuild(id string) *config.Guild {
 		return val
 	}
 	var rawData string
-	var guild config.Guild
+	guild := config.CurrentConfig.Guild
 	row := loadGuildConfigStmt.QueryRow(id)
 	err := row.Scan(&rawData)
 
 	if err == nil {
 		json.Unmarshal([]byte(rawData), &guild)
 	} else if err == sql.ErrNoRows {
-		guild = config.CurrentConfig.Guild
+		// skip
 	} else {
 		log.Fatal("LoadGuild scan error: ", err)
 	}
 
+	compileGuild(&guild)
+
 	guildCache[id] = &guild
 	return &guild
+}
+
+func compileGuild(guild *config.Guild) {
+	guild.ParsedIgnore = make([]*regexp.Regexp, 0, len(guild.Ignore))
+	for _, v := range guild.Ignore {
+		regex, err := regexp.Compile(v)
+		if err != nil {
+			log.Print("Failed to compile regex: ", err)
+			continue
+		}
+		guild.ParsedIgnore = append(guild.ParsedIgnore, regex)
+	}
 }
 
 func SaveGuild(id string) error {
@@ -121,6 +136,9 @@ func SaveGuild(id string) error {
 	if err != nil {
 		log.Print("WARN: SaveGuild error: ", err)
 	}
+
+	compileGuild(guildCache[id])
+
 	return err
 }
 

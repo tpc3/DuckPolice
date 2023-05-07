@@ -31,6 +31,10 @@ func ConfigUsage(session *discordgo.Session, orgMsg *discordgo.MessageCreate, gu
 		Value: config.Lang[guild.Lang].Usage.Config.Lang,
 	})
 	msg.Fields = append(msg.Fields, &discordgo.MessageEmbedField{
+		Name:  "ignore add <regexp>\nignore del <regexp>",
+		Value: config.Lang[guild.Lang].Usage.Config.Ignore,
+	})
+	msg.Fields = append(msg.Fields, &discordgo.MessageEmbedField{
 		Name:  "alert type <type>\nalert message <message>\nalert react <emoji>\nalert reject <emoji>",
 		Value: config.Lang[guild.Lang].Usage.Config.Alert,
 	})
@@ -64,6 +68,14 @@ func ConfigCmd(session *discordgo.Session, orgMsg *discordgo.MessageCreate, guil
 				"\nmessage: " + guild.Alert.Message +
 				"\nreact: " + guild.Alert.React +
 				"\nreject: " + guild.Alert.Reject,
+		})
+		ignoreList := ""
+		for _, v := range guild.Ignore {
+			ignoreList += v + "\n"
+		}
+		msg.Fields = append(msg.Fields, &discordgo.MessageEmbedField{
+			Name:  "ignore",
+			Value: ignoreList,
 		})
 		domainList := ""
 		for _, v := range guild.Domain.List {
@@ -111,6 +123,8 @@ func ConfigCmd(session *discordgo.Session, orgMsg *discordgo.MessageCreate, guil
 			common.ErrorReply(session, orgMsg, "unsupported language")
 			return
 		}
+	case "ignore":
+		ignoreCmd(session, orgMsg, guild, split[1])
 	case "alert":
 		alertCmd(session, orgMsg, guild, split[1])
 	case "domain":
@@ -253,6 +267,37 @@ func channelCmd(session *discordgo.Session, orgMsg *discordgo.MessageCreate, gui
 		emb.Description = common.GetGroup(session, guild, channel)
 		common.ReplyEmbed(session, orgMsg, emb)
 		return
+	default:
+		ConfigUsage(session, orgMsg, guild, errors.New("unknown sub command"))
+		return
+	}
+	err := db.SaveGuild(orgMsg.GuildID)
+	if err != nil {
+		common.UnknownError(session, orgMsg, guild.Lang, err)
+		return
+	}
+	session.MessageReactionAdd(orgMsg.ChannelID, orgMsg.ID, "👍")
+}
+
+func ignoreCmd(session *discordgo.Session, orgMsg *discordgo.MessageCreate, guild *config.Guild, message string) {
+	split := strings.SplitN(message, " ", 2)
+	if len(split) < 2 {
+		ConfigUsage(session, orgMsg, guild, errors.New("not enough arguments"))
+		return
+	}
+	switch split[0] {
+	case "add":
+		if _, err := regexp.Compile(split[1]); err != nil {
+			common.ErrorReply(session, orgMsg, config.Lang[guild.Lang].Error.RegexCompile)
+			return
+		}
+		guild.Ignore = append(guild.Ignore, split[1])
+	case "del":
+		for k, v := range guild.Ignore {
+			if split[1] == v {
+				guild.Ignore = append(guild.Ignore[:k], guild.Ignore[k+1:]...)
+			}
+		}
 	default:
 		ConfigUsage(session, orgMsg, guild, errors.New("unknown sub command"))
 		return
