@@ -5,7 +5,6 @@ type Strings struct {
 	Help     string
 	CurrConf string
 	Usage    usagestr
-	Clean    cleanstr
 	Error    errorstr
 }
 
@@ -24,15 +23,13 @@ type usagestr struct {
 	Config configusagestr
 }
 
-type cleanstr struct {
-	Title      string
-	DeletedLog string
-}
-
 type configusagestr struct {
-	Desc   string
-	Prefix string
-	Lang   string
+	Desc    string
+	Prefix  string
+	Lang    string
+	Alert   string
+	Domain  string
+	Channel string
 }
 
 var (
@@ -51,11 +48,15 @@ func loadLang() {
 				Desc:   "各種設定を行います。\n設定項目と内容は以下をご確認ください。",
 				Prefix: "コマンドの接頭詞を指定します。\nデフォルトは`" + CurrentConfig.Guild.Prefix + "`です。",
 				Lang:   "言語を指定します。デフォルトは`" + CurrentConfig.Guild.Lang + "`です。",
+				Alert:  "通知の設定を行います。\ntype: reply, message, dmのいずれかを指定できます。\nmessage: 通知文を設定します。\nreact: 通知先メッセージにつけるリアクションを設定します。\nreject: 通知メッセージを削除するリアクションを指定します。",
+				Domain: "検出するドメインリストの設定を行います。\nmode: white, blackのいずれかを指定できます。\nadd,delete: リストの内容を追加/削除します。",
+				Channel: "チャンネルグループの設定を行います。\n" +
+					"同じグループに含まれるチャンネル内でのみ検出を行います。\n" +
+					"[selector]: 設定対象を指定します。チャンネルID,`channel`,`thread`のいずれかを設定できます。省略した場合コマンドを実行したチャンネルのIDが使用されます。\n" +
+					"[value]: グループ名を指定します。selectorが`channel`,`thread`の場合は`categoryId`,`channelId`,`threadId`を指定できます。\n" +
+					"メッセージが送信されたチャンネルID→チャンネル種類→上位チャンネル(カテゴリなど)のIDの順に検索が行われ、最初に一致したグループIDが使用されます。\n" +
+					"一致がなければ\"default\"になります",
 			},
-		},
-		Clean: cleanstr{
-			Title:      "実行結果",
-			DeletedLog: "件の古いログを消去しました",
 		},
 		Error: errorstr{
 			UnknownTitle: "予期せぬエラーが発生しました。",
@@ -77,10 +78,6 @@ func loadLang() {
 				Prefix: "Specify command prefix.\nDefaults to `" + CurrentConfig.Guild.Prefix + "`",
 				Lang:   "Specify language.\nDefaults to `" + CurrentConfig.Guild.Lang + "`",
 			},
-		},
-		Clean: cleanstr{
-			Title:      "Delete old log",
-			DeletedLog: "old log",
 		},
 		Error: errorstr{
 			UnknownTitle: "Unexpected error is occurred.",

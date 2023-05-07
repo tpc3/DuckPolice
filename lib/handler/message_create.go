@@ -35,44 +35,12 @@ func MessageCreate(session *discordgo.Session, orgMsg *discordgo.MessageCreate) 
 		return
 	}
 
-	// Ignore all messages from blacklisted user
-	for _, v := range config.CurrentConfig.UserBlacklist {
-		if orgMsg.Author.ID == v {
-			return
-		}
-	}
-
-	for _, v := range config.CurrentConfig.ChannelBlacklist {
-		if orgMsg.ChannelID == v {
-			return
-		}
-	}
-
 	// Ignore bot message
 	if orgMsg.Author.Bot {
 		return
 	}
 
-	if strings.Contains(orgMsg.Content, "再掲") {
-		return
-	}
-
-	guild := db.LoadGuild(&orgMsg.GuildID)
-
-	/*
-		channel, err := session.Channel(orgMsg.ChannelID)
-		if err != nil {
-			log.Fatal("Failed to get channel info: ", err)
-		}
-		switch channel.Type {
-		case discordgo.ChannelTypeGuildPrivateThread:
-			return
-		case discordgo.ChannelTypeGuildPublicThread:
-			return
-		case discordgo.ChannelTypeGuildForum:
-			return
-		}
-	*/
+	guild := db.LoadGuild(orgMsg.GuildID)
 
 	isCmd := false
 	var trimedMsg string
@@ -88,7 +56,7 @@ func MessageCreate(session *discordgo.Session, orgMsg *discordgo.MessageCreate) 
 		if config.CurrentConfig.Debug {
 			log.Print("Command processing")
 		}
-		cmds.HandleCmd(session, orgMsg, guild, &trimedMsg)
+		cmds.HandleCmd(session, orgMsg, guild, trimedMsg)
 		return
 	}
 

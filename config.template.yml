@@ -3,13 +3,6 @@ help: https://github.com/tpc3/DuckPolice/wiki
 discord:
   token: YOUR_TOKEN_HERE
   status: Duck Police is observing you | p.help
-duplicate:
-  deletemessage: false
-  alert: reply
-  message: 既出警察だ！
-  react: "\U0001F6A8"
-delete:
-  trigger: "❌"
 db:
   kind: sqlite3
   parameter: ./db.sqlite
@@ -17,13 +10,21 @@ db:
 guild:
   prefix: p.
   lang: japanese
-domain:
-  type: white
-  list:
-  - twitter.com
-  - youtube.com
+  alert:
+    type: reply
+    message: 既出警察だ！
+    react: "\U0001F6A8"
+    reject: "❌"
+  domain:
+    mode: white
+    list:
+    - twitter.com
+    - youtube.com
+  channel:
+    thread: threadId
 user_blacklist:
 - "0000000000000000000"
 channel_blacklist:
 - "000000000000000000"
 log_period: 2592000
+

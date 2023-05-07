@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"encoding/json"
 	"log"
 	"time"
 
@@ -12,18 +13,13 @@ import (
 )
 
 var db *sql.DB
-var getDBverStmt *sql.Stmt
-var loadGuildStmt *sql.Stmt
-var insertGuildStmt *sql.Stmt
-var updateGuildStmt *sql.Stmt
+var loadGuildConfigStmt *sql.Stmt
+var setGuildConfigStmt *sql.Stmt
 
-var addLogStmt map[string]*sql.Stmt
-var updateLogStmt map[string]*sql.Stmt
-var cleanOldLogStmt map[string]*sql.Stmt
-
-var guild_loaded bool
-
-const db_version = 1
+var searchLogStmt *sql.Stmt
+var addLogStmt *sql.Stmt
+var deleteLogStmt *sql.Stmt
+var cleanOldLogStmt *sql.Stmt
 
 func init() {
 	var err error
@@ -31,43 +27,57 @@ func init() {
 	if err != nil {
 		log.Fatal("DB load error: ", err)
 	}
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS " + config.CurrentConfig.Db.Tableprefix + "guilds (" +
-		"id BIGINT NOT NULL PRIMARY KEY," +
-		"db_version INT NOT NULL," +
-		"prefix VARCHAR," +
-		"lang VARCHAR)")
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS " + config.CurrentConfig.Db.Tableprefix + "config (" +
+		"guild BIGINT NOT NULL PRIMARY KEY," +
+		"data VARCHAR NOT NULL)")
 	if err != nil {
-		log.Fatal("Create guild table error: ", err)
+		log.Fatal("Create guild config table error: ", err)
 	}
-	_, err = db.Exec("ALTER TABLE " + config.CurrentConfig.Db.Tableprefix + "guilds DROP COLUMN bots")
-	if err == nil {
-		log.Print("WARN: Database update successfully")
-	} else {
-		log.Print("FINE: Guilds DB up-to-date!")
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS " + config.CurrentConfig.Db.Tableprefix + "log (" +
+		"guild VARCHAR NOT NULL, " +
+		"groupid VARCHAR NOT NULL, " +
+		"content VARCHAR NOT NULL, " +
+		"channelid BIGINT NOT NULL, " +
+		"messageid BIGINT NOT NULL)")
+	if err != nil {
+		log.Fatal("Create log table error: ", err)
 	}
 	_, err = db.Exec("VACUUM")
 	if err != nil {
 		log.Fatal("DB VACUUM error: ", err)
 	}
-	getDBverStmt, err = db.Prepare("SELECT db_version FROM " + config.CurrentConfig.Db.Tableprefix + "guilds WHERE " + "id = ?")
-	if err != nil {
-		log.Fatal("Prepare getDBverStmt error: ", err)
-	}
-	loadGuildStmt, err = db.Prepare("SELECT * FROM " + config.CurrentConfig.Db.Tableprefix + "guilds WHERE " + "id = ?")
+	loadGuildConfigStmt, err = db.Prepare("SELECT data FROM " + config.CurrentConfig.Db.Tableprefix + "config WHERE guild = ?")
 	if err != nil {
 		log.Fatal("Prepare loadGuildStmt error: ", err)
 	}
-	insertGuildStmt, err = db.Prepare("INSERT INTO " + config.CurrentConfig.Db.Tableprefix + "guilds(id,db_version,prefix,lang) VALUES(?,?,?,?)")
+	setGuildConfigStmt, err = db.Prepare("INSERT INTO " + config.CurrentConfig.Db.Tableprefix + "config" +
+		"(guild,data) " +
+		"VALUES (?,?) " +
+		"ON CONFLICT (guild) " +
+		"DO UPDATE set data = ?")
 	if err != nil {
 		log.Fatal("Prepare insertGuildStmt error: ", err)
 	}
-	updateGuildStmt, err = db.Prepare("UPDATE " + config.CurrentConfig.Db.Tableprefix + "guilds " + "SET db_version = ?, prefix = ?, lang = ? " + "WHERE id = ?")
+
+	searchLogStmt, err = db.Prepare("SELECT channelid, messageid FROM " + config.CurrentConfig.Db.Tableprefix + "log WHERE guild = ? AND groupid = ? AND content = ?")
 	if err != nil {
-		log.Fatal("Prepare updateGuildStmt error: ", err)
+		log.Fatal("Prepare searchLogStmt error: ", err)
 	}
-	addLogStmt = map[string]*sql.Stmt{}
-	updateLogStmt = map[string]*sql.Stmt{}
-	cleanOldLogStmt = map[string]*sql.Stmt{}
+
+	addLogStmt, err = db.Prepare("INSERT INTO " + config.CurrentConfig.Db.Tableprefix + "log (guild,groupid,content,channelid,messageid) VALUES(?,?,?,?,?)")
+	if err != nil {
+		log.Fatal("Prepare addLogStmt error: ", err)
+	}
+
+	deleteLogStmt, err = db.Prepare("DELETE FROM " + config.CurrentConfig.Db.Tableprefix + "log WHERE guild = ? AND groupid = ? AND content = ?")
+	if err != nil {
+		log.Fatal("Prepare updateLogStmt error: ", err)
+	}
+
+	cleanOldLogStmt, err = db.Prepare("DELETE FROM " + config.CurrentConfig.Db.Tableprefix + "log WHERE messageid < ?")
+	if err != nil {
+		log.Fatal("Prepare cleanOldLogStmt error: ", err)
+	}
 }
 
 func Close() {
@@ -79,100 +89,47 @@ func Close() {
 
 var guildCache = map[string]*config.Guild{}
 
-func LoadGuild(id *string) *config.Guild {
-	val, exists := guildCache[*id]
+func LoadGuild(id string) *config.Guild {
+	val, exists := guildCache[id]
 	if exists {
 		return val
 	}
-	rows, err := getDBverStmt.Query(id)
-	if err != nil {
-		log.Fatal("GetDBver query error", err)
-	}
-	URLsTable := config.CurrentConfig.Db.Tableprefix + *id + "_URLs"
-	var dbVersion int
-	if rows.Next() {
-		err := rows.Scan(&dbVersion)
-		rows.Close()
-		if err != nil {
-			log.Fatal("GetDBver Scan error: ", err)
-		}
-	} else {
-		rows.Close()
-		log.Print("WARN: Guild not found, making row.")
-		guild := config.CurrentConfig.Guild
-		_, err = insertGuildStmt.Exec(id, db_version, guild.Prefix, guild.Lang)
-		if err != nil {
-			log.Fatal("LoadGuild insert error: ", err)
-		}
-		_, err = db.Exec("CREATE TABLE IF NOT EXISTS " + URLsTable + " (" +
-			"content VARCHAR NOT NULL," +
-			"timeat BIGINT NOT NULL," +
-			"channelid BIGINT NOT NULL," +
-			"messageid BIGINT NOT NULL)")
-		if err != nil {
-			log.Fatal("Create URL table error:", err)
-		}
-	}
+	var rawData string
 	var guild config.Guild
-	var guildID int64
-	rows, err = loadGuildStmt.Query(id)
-	if err != nil {
-		log.Fatal("LoadGuild query error: ", err)
-	}
-	defer rows.Close()
-	if !rows.Next() {
-		log.Fatal("LoadGuild next returned false")
-	}
-	err = rows.Scan(&guildID, &dbVersion, &guild.Prefix, &guild.Lang)
-	if err != nil {
+	row := loadGuildConfigStmt.QueryRow(id)
+	err := row.Scan(&rawData)
+
+	if err == nil {
+		json.Unmarshal([]byte(rawData), &guild)
+	} else if err == sql.ErrNoRows {
+		guild = config.CurrentConfig.Guild
+	} else {
 		log.Fatal("LoadGuild scan error: ", err)
 	}
-	defer rows.Close()
 
-	addLogStmt[*id], err = db.Prepare("INSERT INTO " + URLsTable + "(content,timeat,channelid,messageid) VALUES(?,?,?,?)")
-	if err != nil {
-		log.Fatal("Prepare addLogStmt error: ", err)
-	}
-
-	updateLogStmt[*id], err = db.Prepare("UPDATE  " + URLsTable + " SET channelid = ?, messageid = ? WHERE content = ?")
-	if err != nil {
-		log.Fatal("Prepare updateLogStmt error: ", err)
-	}
-
-	cleanOldLogStmt[*id], err = db.Prepare("DELETE FROM " + URLsTable + " " + "WHERE timeat < ?")
-	if err != nil {
-		log.Fatal("Prepare cleanOldLogStmt error: ", err)
-	}
-
-	guildCache[*id] = &guild
-	guild_loaded = true
+	guildCache[id] = &guild
 	return &guild
 }
 
-func SaveGuild(id *string, guild *config.Guild) error {
-	_, err := updateGuildStmt.Exec(db_version, guild.Prefix, guild.Lang, *id)
+func SaveGuild(id string) error {
+	data, err := json.Marshal(guildCache[id])
+	if err != nil {
+		log.Print("WARN: Marshal guild error: ", err)
+		return err
+	}
+	_, err = setGuildConfigStmt.Exec(id, data, data)
 	if err != nil {
 		log.Print("WARN: SaveGuild error: ", err)
-	} else {
-		delete(guildCache, *id)
 	}
 	return err
 }
 
-func AddLog(orgMsg *discordgo.MessageCreate, guildId *string, content *string, channelid, messageid *string) {
-	addLogStmt[*guildId].Exec(content, time.Now().Unix(), channelid, messageid)
+func AddLog(orgMsg *discordgo.MessageCreate, guildId, groupId string, content *string, channelid, messageid string) {
+	addLogStmt.Exec(guildId, groupId, content, channelid, messageid)
 }
 
-func UpdateLog(orgMsg *discordgo.MessageCreate, guildId *string, content *string, channelid, messageid *string) {
-	updateLogStmt[*guildId].Exec(channelid, messageid, content)
-}
-
-func SearchLog(session *discordgo.Session, orgMsg *discordgo.MessageCreate, guildId *string, content *string) (found bool, channelid string, messageid string) {
-	if !guild_loaded {
-		LoadGuild(guildId)
-	}
-	URLsTable := config.CurrentConfig.Db.Tableprefix + *guildId + "_URLs"
-	err := db.QueryRow("SELECT channelid, messageid FROM "+URLsTable+" WHERE content = ?", content).Scan(&channelid, &messageid)
+func SearchLog(session *discordgo.Session, guildId, groupId string, content *string) (found bool, channelid string, messageid string) {
+	err := searchLogStmt.QueryRow(guildId, groupId, content).Scan(&channelid, &messageid)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			found = false
@@ -180,32 +137,41 @@ func SearchLog(session *discordgo.Session, orgMsg *discordgo.MessageCreate, guil
 			log.Fatal("Search Log error: ", err)
 		}
 	} else {
-		exist, _ := session.ChannelMessage(channelid, messageid)
-		if exist == nil {
-			UpdateLog(orgMsg, guildId, content, &orgMsg.ChannelID, &orgMsg.ID)
-			return
+		_, err := session.State.Message(channelid, messageid)
+		if err == discordgo.ErrStateNotFound {
+			_, err = session.ChannelMessage(channelid, messageid)
 		}
-		found = true
+		if err == nil {
+			found = true
+			return
+		} else {
+			DeleteLog(guildId, groupId, content)
+		}
 	}
 	return
 }
 
-func CleanOldLog(guildId *string) (*int64, error) {
-	res, err := cleanOldLogStmt[*guildId].Exec(time.Now().Unix() - config.CurrentConfig.LogPeriod)
+func DeleteLog(guildId, groupId string, content *string) {
+	deleteLogStmt.Exec(guildId, groupId, content)
+}
+
+func timeToSnowflake(t time.Time) int64 {
+	return (t.UnixMilli() - 1420070400000) << 22
+}
+
+func CleanOldLog() (int64, error) {
+	res, err := cleanOldLogStmt.Exec(timeToSnowflake(time.Now().Add(-time.Duration(config.CurrentConfig.LogPeriod) * time.Second)))
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
-	num, err := res.RowsAffected()
-	return &num, err
+	return res.RowsAffected()
 }
 
 func AutoLogCleaner() {
 	for {
-		for guildId := range guildCache {
-			_, err := CleanOldLog(&guildId)
-			if err != nil {
-				log.Print("Failed to auto clean log: ", err)
-			}
+		_, err := CleanOldLog()
+		if err != nil {
+			log.Print("Failed to auto clean log: ", err)
 		}
 		nextTime := time.Now().Truncate(24 * time.Hour).Add(24 * time.Hour)
 		time.Sleep(time.Until(nextTime))
