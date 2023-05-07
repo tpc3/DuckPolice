@@ -58,8 +58,10 @@ var (
 
 func parseMsg(guild *config.Guild, origin string) []string {
 	result := []string{}
-	if strings.HasPrefix(origin, "< ") {
-		return result
+	for _, v := range guild.ParsedIgnore {
+		if v.MatchString(origin) {
+			return []string{}
+		}
 	}
 	for _, rawUrl := range urlWithPathRegex.FindAllString(origin, -1) {
 		rawUrl = strings.ToLower(rawUrl)

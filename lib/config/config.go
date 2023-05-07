@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"os"
+	"regexp"
 
 	"gopkg.in/yaml.v2"
 )
@@ -25,9 +26,11 @@ type Config struct {
 }
 
 type Guild struct {
-	Prefix string
-	Lang   string
-	Alert  struct {
+	Prefix       string
+	Lang         string
+	Ignore       []string
+	ParsedIgnore []*regexp.Regexp `json:"-" yaml:"-"`
+	Alert        struct {
 		Type    string
 		Message string
 		React   string
