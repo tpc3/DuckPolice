@@ -10,6 +10,8 @@ db:
 guild:
   prefix: p.
   lang: japanese
+  ignore:
+  - "^< "
   alert:
     type: reply
     message: 既出警察だ！
