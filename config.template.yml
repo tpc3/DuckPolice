@@ -24,9 +24,5 @@ guild:
     - youtube.com
   channel:
     thread: threadId
-user_blacklist:
-- "0000000000000000000"
-channel_blacklist:
-- "000000000000000000"
 log_period: 2592000
 
