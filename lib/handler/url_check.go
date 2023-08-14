@@ -72,21 +72,28 @@ func parseMsg(guild *config.Guild, origin string) []string {
 	}
 	for _, rawUrl := range urlWithPathRegex.FindAllString(origin, -1) {
 		rawUrl = strings.ToLower(rawUrl)
-		rawUrl = strings.ReplaceAll(rawUrl, "fxtwitter.com/", "twitter.com/")
 		rawUrl = strings.ReplaceAll(rawUrl, "youtu.be/", "youtube.com/watch?v=")
+
 		Url, err := url.Parse(rawUrl)
 		if err != nil {
 			log.Panic("Invalid URL: ", rawUrl)
 		}
-		switch Url.Path {
-		case "":
-			continue
-		case "/":
-			continue
+
+		Url.Host = strings.TrimPrefix(Url.Host, "www.")
+		switch Url.Host {
+		case "m.twitter.com", "mobile.twitter.com", "fxtwitter.com", "vxtwitter.com", "x.com":
+			Url.Host = "twitter.com"
+			Url.RawQuery = ""
 		}
 		if net.ParseIP(Url.Host) != nil {
 			continue
 		}
+
+		Url.Path = strings.TrimSuffix(Url.Path, "/")
+		if Url.Path == "" {
+			continue
+		}
+
 		found := false
 		for _, v := range guild.Domain.List {
 			if Url.Host == v {
@@ -104,13 +111,7 @@ func parseMsg(guild *config.Guild, origin string) []string {
 				continue
 			}
 		}
-		Url.Host = strings.TrimPrefix(Url.Host, "www.")
-		Url.Path = strings.TrimSuffix(Url.Path, "/")
-		if Url.Host == "twitter.com" {
-			Url.Host = strings.TrimPrefix(Url.Host, "m.")
-			Url.Host = strings.TrimPrefix(Url.Host, "mobile.")
-			Url.RawQuery = ""
-		}
+
 		result[Url.String()] = struct{}{}
 	}
 
