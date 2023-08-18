@@ -81,7 +81,7 @@ func parseMsg(guild *config.Guild, origin string) []string {
 
 		Url.Host = strings.TrimPrefix(Url.Host, "www.")
 		switch Url.Host {
-		case "m.twitter.com", "mobile.twitter.com", "fxtwitter.com", "vxtwitter.com", "x.com":
+		case "twitter.com", "m.twitter.com", "mobile.twitter.com", "fxtwitter.com", "vxtwitter.com", "x.com":
 			Url.Host = "twitter.com"
 			Url.RawQuery = ""
 		}
