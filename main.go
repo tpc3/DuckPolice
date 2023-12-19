@@ -10,7 +10,6 @@ import (
 	"github.com/tpc3/DuckPolice/lib/handler"
 
 	"github.com/bwmarrin/discordgo"
-	_ "github.com/mattn/go-sqlite3"
 )
 
 func main() {
@@ -27,6 +26,10 @@ func main() {
 		log.Fatal("error opening connection: ", err)
 	}
 	discord.UpdateGameStatus(0, config.CurrentConfig.Discord.Status)
+	err = db.InitDB()
+	if err != nil {
+		log.Fatal("error initializing database: ", err)
+	}
 	go db.AutoLogCleaner()
 	log.Print("DuckPolice is now dispatching!")
 	defer discord.Close()

@@ -1,9 +1,8 @@
 FROM golang:alpine AS build
-RUN apk add git gcc musl-dev
+ADD . /go/src/DuckPolice/
 ARG GOARCH=amd64
 ENV GOARCH ${GOARCH}
-ENV CGO_ENABLED 1
-ADD . /go/src/DuckPolice/
+ENV CGO_ENABLED 0
 WORKDIR /go/src/DuckPolice
 RUN go build .
 
