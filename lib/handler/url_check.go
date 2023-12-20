@@ -24,9 +24,9 @@ func urlCheck(session *discordgo.Session, orgMsg *discordgo.MessageCreate) {
 	message := guild.Alert.Message
 
 	for _, url := range parsed {
-		found, dst := db.SearchLog(session, orgMsg.GuildID, groupId, &url)
+		found, msg := db.SearchLog(session, orgMsg.GuildID, groupId, &url)
 		if found {
-			message += "\nhttps://discord.com/channels/" + orgMsg.GuildID + "/" + dst.ChannelID + "/" + dst.MessageID
+			message += "\nhttps://discord.com/channels/" + orgMsg.GuildID + "/" + msg.ChannelID + "/" + msg.MessageID
 		} else {
 			db.AddLog(orgMsg, orgMsg.GuildID, groupId, &url, orgMsg.ChannelID, orgMsg.ID)
 		}

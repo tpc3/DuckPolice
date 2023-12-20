@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	github.com/bwmarrin/discordgo v0.27.0
+	github.com/jinzhu/copier v0.4.0
 	github.com/uptrace/bun v1.1.16
 	github.com/uptrace/bun/dialect/sqlitedialect v1.1.16
 	github.com/uptrace/bun/driver/sqliteshim v1.1.16

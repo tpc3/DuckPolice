@@ -12,6 +12,7 @@ import (
 	"github.com/tpc3/DuckPolice/lib/config"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/jinzhu/copier"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/sqlitedialect"
 	"github.com/uptrace/bun/driver/sqliteshim"
@@ -52,12 +53,20 @@ func LoadGuild(id string) *config.Guild {
 		return val
 	}
 	var rawData string
-	guild := config.CurrentConfig.Guild
+	currGuild := config.CurrentConfig.Guild
+	var guild config.Guild
+	err := copier.Copy(&guild, &currGuild)
+	if err != nil {
+		log.Print("WARN: Guild deep copy error: ", err)
+	}
 	row := db.QueryRow("SELECT data FROM config WHERE guild = ?", id)
-	err := row.Scan(&rawData)
+	err = row.Scan(&rawData)
 
 	if err == nil {
-		json.Unmarshal([]byte(rawData), &guild)
+		err = json.Unmarshal([]byte(rawData), &guild)
+		if err != nil {
+			log.Print("WARN: JSON parsing error: ", err)
+		}
 	} else if err == sql.ErrNoRows {
 		// skip
 	} else {
@@ -117,12 +126,7 @@ func AddLog(orgMsg *discordgo.MessageCreate, guildId, groupId string, content *s
 }
 
 func SearchLog(session *discordgo.Session, guildId, groupId string, content *string) (found bool, dst common.Log) {
-	src := common.Log{
-		Guild:   guildId,
-		GroupID: groupId,
-		Content: *content,
-	}
-	_, err := db.NewSelect().Model(&src).Where("guild = ?", guildId).Where("groupid = ?", groupId).Where("content = ?", content).Exec(context.Background(), &dst)
+	_, err := db.NewSelect().Model(&common.Log{}).Where("guild = ?", guildId).Where("groupid = ?", groupId).Where("content = ?", content).Exec(context.Background(), &dst)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			found = false
@@ -145,12 +149,7 @@ func SearchLog(session *discordgo.Session, guildId, groupId string, content *str
 }
 
 func DeleteLog(guildId, groupId string, content *string) {
-	src := common.Log{
-		Guild:   guildId,
-		GroupID: groupId,
-		Content: *content,
-	}
-	_, err := db.NewDelete().Model(&src).Where("guild = ?", guildId).Where("groupid = ?").Where("content = ?").Exec(context.Background())
+	_, err := db.NewDelete().Model(&common.Log{}).Where("guild = ?", guildId).Where("groupid = ?", groupId).Where("content = ?", content).Exec(context.Background())
 	if err != nil {
 		log.Print("WARN: deleting log error: ", err)
 	}
@@ -161,7 +160,7 @@ func timeToSnowflake(t time.Time) int64 {
 }
 
 func CleanOldLog() (int64, error) {
-	res, err := db.NewDelete().Table("log").Where("messageid < ?", timeToSnowflake(time.Now().Add(-time.Duration(config.CurrentConfig.LogPeriod)*time.Second))).Exec(context.Background())
+	res, err := db.NewDelete().Model(&common.Log{}).Where("messageid < ?", timeToSnowflake(time.Now().Add(-time.Duration(config.CurrentConfig.LogPeriod)*time.Second))).Exec(context.Background())
 	if err != nil {
 		return 0, err
 	}
