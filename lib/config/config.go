@@ -17,9 +17,7 @@ type Config struct {
 		Status string
 	}
 	Db struct {
-		Kind        string
 		Parameter   string
-		Tableprefix string
 	}
 	Guild     Guild
 	LogPeriod int64 `yaml:"log_period"`

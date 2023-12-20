@@ -6,6 +6,7 @@ require (
 	github.com/bwmarrin/discordgo v0.27.0
 	github.com/uptrace/bun v1.1.16
 	github.com/uptrace/bun/dialect/sqlitedialect v1.1.16
+	github.com/uptrace/bun/driver/sqliteshim v1.1.16
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -20,7 +21,6 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.17 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/tmthrgd/go-hex v0.0.0-20190904060850-447a3041c3bc // indirect
-	github.com/uptrace/bun/driver/sqliteshim v1.1.16 // indirect
 	github.com/vmihailenco/msgpack/v5 v5.3.5 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	golang.org/x/crypto v0.17.0 // indirect

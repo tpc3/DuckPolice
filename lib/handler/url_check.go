@@ -24,9 +24,9 @@ func urlCheck(session *discordgo.Session, orgMsg *discordgo.MessageCreate) {
 	message := guild.Alert.Message
 
 	for _, url := range parsed {
-		found, channelid, messageid := db.SearchLog(session, orgMsg.GuildID, groupId, &url)
+		found, dst := db.SearchLog(session, orgMsg.GuildID, groupId, &url)
 		if found {
-			message += "\nhttps://discord.com/channels/" + orgMsg.GuildID + "/" + channelid + "/" + messageid
+			message += "\nhttps://discord.com/channels/" + orgMsg.GuildID + "/" + dst.ChannelID + "/" + dst.MessageID
 		} else {
 			db.AddLog(orgMsg, orgMsg.GuildID, groupId, &url, orgMsg.ChannelID, orgMsg.ID)
 		}
@@ -55,7 +55,16 @@ func urlCheck(session *discordgo.Session, orgMsg *discordgo.MessageCreate) {
 		if err != nil {
 			common.UnknownError(session, orgMsg, guild.Lang, err)
 		}
-		session.ChannelMessageSendReply(orgMsg.ChannelID, message, orgMsg.Reference())
+		reply := discordgo.MessageSend{}
+		reply.Content = message
+		reply.Reference = orgMsg.Reference()
+		reply.AllowedMentions = &discordgo.MessageAllowedMentions{
+			RepliedUser: false,
+		}
+		_, err = session.ChannelMessageSendComplex(orgMsg.ChannelID, &reply)
+		if err != nil {
+			log.Print("Failed to send reply: ", err)
+		}
 	}
 }
 

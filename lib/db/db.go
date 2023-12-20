@@ -53,8 +53,8 @@ func LoadGuild(id string) *config.Guild {
 	}
 	var rawData string
 	guild := config.CurrentConfig.Guild
-	rows, _ := db.QueryContext(context.Background(), "SELECT * FROM config")
-	err := db.ScanRows(context.Background(), rows, &rawData)
+	row := db.QueryRow("SELECT data FROM config WHERE guild = ?", id)
+	err := row.Scan(&rawData)
 
 	if err == nil {
 		json.Unmarshal([]byte(rawData), &guild)
@@ -110,18 +110,17 @@ func AddLog(orgMsg *discordgo.MessageCreate, guildId, groupId string, content *s
 		ChannelID: channelid,
 		MessageID: messageid,
 	}
-	db.NewInsert().Model(&src).Exec(context.Background())
+	_, err := db.NewInsert().Model(&src).Exec(context.Background())
+	if err != nil {
+		log.Print("WARN: adding log error: ", err)
+	}
 }
 
-func SearchLog(session *discordgo.Session, guildId, groupId string, content *string) (found bool, channelid string, messageid string) {
+func SearchLog(session *discordgo.Session, guildId, groupId string, content *string) (found bool, dst common.Log) {
 	src := common.Log{
 		Guild:   guildId,
 		GroupID: groupId,
 		Content: *content,
-	}
-	dst := common.Log{
-		ChannelID: channelid,
-		MessageID: messageid,
 	}
 	_, err := db.NewSelect().Model(&src).Where("guild = ?", guildId).Where("groupid = ?", groupId).Where("content = ?", content).Exec(context.Background(), &dst)
 	if err != nil {
@@ -137,12 +136,12 @@ func SearchLog(session *discordgo.Session, guildId, groupId string, content *str
 		}
 		if err == nil {
 			found = true
-			return found, dst.ChannelID, dst.MessageID
+			return
 		} else {
 			DeleteLog(guildId, groupId, content)
 		}
 	}
-	return found, dst.ChannelID, dst.MessageID
+	return
 }
 
 func DeleteLog(guildId, groupId string, content *string) {
@@ -151,7 +150,10 @@ func DeleteLog(guildId, groupId string, content *string) {
 		GroupID: groupId,
 		Content: *content,
 	}
-	db.NewDelete().Model(&src).Where("guild = ?", guildId).Where("groupid = ?").Where("content = ?").Exec(context.Background())
+	_, err := db.NewDelete().Model(&src).Where("guild = ?", guildId).Where("groupid = ?").Where("content = ?").Exec(context.Background())
+	if err != nil {
+		log.Print("WARN: deleting log error: ", err)
+	}
 }
 
 func timeToSnowflake(t time.Time) int64 {

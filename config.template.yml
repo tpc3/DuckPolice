@@ -4,9 +4,7 @@ discord:
   token: YOUR_TOKEN_HERE
   status: Duck Police is observing you | p.help
 db:
-  kind: sqlite3
   parameter: ./db.sqlite
-  tableprefix: duckpolice_
 guild:
   prefix: p.
   lang: japanese
@@ -25,4 +23,3 @@ guild:
   channel:
     thread: threadId
 log_period: 2592000
-
