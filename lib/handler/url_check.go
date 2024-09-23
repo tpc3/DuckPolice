@@ -93,6 +93,7 @@ func parseMsg(guild *config.Guild, origin string) []string {
 		case "twitter.com", "m.twitter.com", "mobile.twitter.com", "fxtwitter.com", "vxtwitter.com", "x.com":
 			Url.Host = "twitter.com"
 			Url.RawQuery = ""
+			Url.ForceQuery = false
 		}
 		if net.ParseIP(Url.Host) != nil {
 			continue
